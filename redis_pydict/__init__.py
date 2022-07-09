@@ -36,6 +36,7 @@ TYPE_DECODE_FUNCTIONS = {
     "custom": lambda c: pickle.loads(c)
 }
 
+
 class DataFunctions:
 
     @staticmethod
@@ -44,17 +45,17 @@ class DataFunctions:
         if type_ not in TYPE_ENCODE_FUNCTIONS:
             return TYPE_ENCODE_FUNCTIONS["custom"](data)
         return TYPE_ENCODE_FUNCTIONS[type_](data)
-    
+
     @staticmethod
     def decode(data):
         type_magic = data[0]
         rest_of_data = data[1:]
         return TYPE_DECODE_FUNCTIONS[type_magic](rest_of_data)
-    
+
     @staticmethod
     def define_key(namespace, key):
-        return namespace + "&&" +  key
-    
+        return namespace + "&&" + key
+
     @staticmethod
     def unpack_key(key_string):
         return key_string.split("&&")[1]
@@ -62,98 +63,98 @@ class DataFunctions:
 
 class PyRedisDict:
 
-    def __init__(self, host='localhost', port=6379, db=0, password=None, namespace="", custom=None):
+    def __init__(self,
+                 host='localhost',
+                 port=6379,
+                 db=0,
+                 password=None,
+                 namespace="",
+                 custom=None):
         self.redis = custom if custom else redis.Redis(
-            host=host, port=port, db=db, password=password
-        )
+            host=host, port=port, db=db, password=password)
 
         self.key_namespace = namespace
-    
+
     def _scan_iter(self, pattern):
-        formatted_pattern = DataFunctions.define_key(self.key_namespace, pattern)
+        formatted_pattern = DataFunctions.define_key(self.key_namespace,
+                                                     pattern)
         return self.redis.scan_iter(formatted_pattern)
 
     # basic GET and SET functions
-    
+
     def get(self, key, default):
         key = DataFunctions.define_key(self.key_namespace, key)
         data = self.redis.get(key)
         if not data:
             return default
         return DataFunctions.decode(data)
-    
+
     def __setitem__(self, key, value):
         key = DataFunctions.define_key(self.key_namespace, key)
         data = DataFunctions.encode(value)
 
         self.redis.set(key, data)
-    
+
     def __getitem__(self, key):
         key_formatted = DataFunctions.define_key(self.key_namespace, key)
         data = self.redis.get(key_formatted)
         if not data:
             raise KeyError(key)
         return DataFunctions.decode(data)
-    
+
     def __delitem__(self, key):
         key_formatted = DataFunctions.define_key(self.key_namespace, key)
         return_value = self.redis.delete(key_formatted)
         if return_value == 0:
             raise KeyError(key)
-    
+
     def __contains__(self, key):
         key_formatted = DataFunctions.define_key(self.key_namespace, key)
         return self.redis.exists(key_formatted)
-    
+
     # iteration functions
-    
+
     def _iter_internal(self, pattern):
         scan_iter = self._scan_iter(pattern)
-        keys = ( DataFunctions.unpack_key(key) for key in scan_iter )
+        keys = (DataFunctions.unpack_key(key) for key in scan_iter)
         return keys
-    
+
     def _iter_items(self, pattern):
-        return [
-            (key, self[key])
-            for key in self._iter_internal(pattern)
-        ]
-    
+        return [(key, self[key]) for key in self._iter_internal(pattern)]
+
     def __iter__(self):
         return self._iter_internal('*')
-    
+
     def items(self):
         return self._iter_items('*')
-    
+
     def iter_matching(self, pattern='*'):
         return self._iter_internal(pattern)
-    
+
     def items_matching(self, pattern='*'):
         return self._iter_items(pattern)
 
     # mulit-data operations
     def keys(self):
         return self._iter_items('*')
-    
+
     def clear(self):
         keys = list(self._scan_iter('*'))
         self.redis.delete(*keys)
-    
+
     def values(self):
         keys = list(self._scan_iter('*'))
-        return [ 
-            DataFunctions.decode(value) 
-            for value in self.redis.mget(*keys)  
+        return [
+            DataFunctions.decode(value) for value in self.redis.mget(*keys)
         ]
-    
+
     def update(self, from_dic):
         pipeline = self.redis.pipeline()
         for key, value in from_dic.items():
-            formatted_key, encoded_value = DataFunctions.define_key(key), DataFunctions.encode(value)
+            formatted_key, encoded_value = DataFunctions.define_key(
+                key), DataFunctions.encode(value)
             pipeline.set(formatted_key, encoded_value)
         pipeline.execute()
-    
+
     def to_dict(self):
-        return {
-            key: value for key, value in self.items()
-        }
-    
+        return {key: value for key, value in self.items()}
