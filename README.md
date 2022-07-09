@@ -1,2 +1,2 @@
 # redis-pydict
-A python dictionary thay uses Redis as in-memory storage backend to facilitate distributed computing applications development.
+A python dictionary that uses Redis as in-memory storage backend to facilitate distributed computing applications development.
