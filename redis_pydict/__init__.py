@@ -1,5 +1,3 @@
-from os import stat
-from types import NoneType
 import pickle
 import json
 import redis
@@ -158,3 +156,9 @@ class PyRedisDict:
 
     def to_dict(self):
         return {key: value for key, value in self.items()}
+    
+    def __len__(self):
+        return len(self._scan_iter('*'))
+    
+    def __str__(self) -> str:
+        return str(self.to_dict())
