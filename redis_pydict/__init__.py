@@ -5,13 +5,13 @@ import redis
 NONE_TYPE_MAGIC = b'PyDictNoneType'
 
 TYPE_MAGIC = {
-    b'n': "NoneType",
-    b'i': "int",
-    b'f': "float",
-    b's': "str",
-    b'd': "dict",
-    b'l': "list",
-    b'c': "custom",
+    ord('n'): "NoneType",
+    ord('i'): "int",
+    ord('f'): "float",
+    ord('s'): "str",
+    ord('d'): "dict",
+    ord('l'): "list",
+    ord('c'): "custom",
 }
 
 TYPE_ENCODE_FUNCTIONS = {
@@ -19,19 +19,19 @@ TYPE_ENCODE_FUNCTIONS = {
     int: lambda i: b'i' + str(i).encode('utf-8'),
     float: lambda f: b'f' + str(f).encode('utf-8'),
     str: lambda s: b's' + str(s).encode("utf-8"),
-    dict: lambda d: b'd' + json.dumps(d),
-    list: lambda l: b'l' + json.dumps(l),
+    dict: lambda d: b'd' + json.dumps(d).encode('utf-8'),
+    list: lambda l: b'l' + json.dumps(l).encode('utf-8'),
     "custom": lambda c: b'c' + pickle.dumps(c)
 }
 
 TYPE_DECODE_FUNCTIONS = {
-    "NoneType": lambda _: None,
-    "int": lambda i: int(i.decode('utf-8')),
-    "float": lambda f: float(f.decode('utf-8')),
-    "str": lambda s: s.deocde('utf-8'),
-    "dict": lambda d: json.loads(d),
-    "list": lambda l: json.loads(l),
-    "custom": lambda c: pickle.loads(c)
+    ord('n'): lambda _: None,
+    ord('i'): lambda i: int(i.decode('utf-8')),
+    ord('f'): lambda f: float(f.decode('utf-8')),
+    ord('s'): lambda s: s.deocde('utf-8'),
+    ord('d'): lambda d: json.loads(d),
+    ord('l'): lambda l: json.loads(l),
+    ord('c'): lambda c: pickle.loads(c)
 }
 
 
@@ -47,6 +47,7 @@ class DataFunctions:
     @staticmethod
     def decode(data):
         type_magic = data[0]
+
         rest_of_data = data[1:]
         return TYPE_DECODE_FUNCTIONS[type_magic](rest_of_data)
 
@@ -55,7 +56,8 @@ class DataFunctions:
         return namespace + "&&" + key
 
     @staticmethod
-    def unpack_key(key_string):
+    def unpack_key(key):
+        key_string = key.decode('utf-8')
         return key_string.split("&&")[1]
 
 
@@ -90,12 +92,12 @@ class PyRedisDict:
     def __setitem__(self, key, value):
         key = DataFunctions.define_key(self.key_namespace, key)
         data = DataFunctions.encode(value)
-
         self.redis.set(key, data)
 
     def __getitem__(self, key):
         key_formatted = DataFunctions.define_key(self.key_namespace, key)
         data = self.redis.get(key_formatted)
+
         if not data:
             raise KeyError(key)
         return DataFunctions.decode(data)
