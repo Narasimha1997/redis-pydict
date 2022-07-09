@@ -54,7 +54,11 @@ class DataFunctions:
     
     @staticmethod
     def define_key(namespace, key):
-        return namespace + "(??)" +  key
+        return namespace + "&&" +  key
+    
+    @staticmethod
+    def unpack_key(key_string):
+        return key_string.split("&&")[1]
 
 
 class PyRedisDict:
@@ -65,4 +69,39 @@ class PyRedisDict:
         )
 
         self.key_namespace = namespace
+    
+    def _scan_iter(self, pattern):
+        formatted_pattern = DataFunctions.define_key(self.key_namespace, pattern)
+        return self.redis.scan_iter(formatted_pattern)
+    
+    def get(self, key, default):
+        key = DataFunctions.define_key(self.key_namespace, key)
+        data = self.redis.get(key)
+        if not data:
+            return default
+        return DataFunctions.decode(data)
+    
+    def __setitem__(self, key, value):
+        key = DataFunctions.define_key(self.key_namespace, key)
+        data = DataFunctions.encode(value)
 
+        self.redis.set(key, data)
+    
+    def __getitem__(self, key):
+        key_formatted = DataFunctions.define_key(self.key_namespace, key)
+        data = self.redis.get(key_formatted)
+        if not data:
+            raise KeyError(key)
+        return DataFunctions.decode(data)
+    
+    def __delitem__(self, key):
+        key_formatted = DataFunctions.define_key(self.key_namespace, key)
+        return_value = self.redis.delete(key_formatted)
+        if return_value == 0:
+            raise KeyError(key)
+    
+    def __contains__(self, key):
+        key_formatted = DataFunctions.define_key(self.key_namespace, key)
+        return self.redis.exists(key_formatted)
+    
+    def __
