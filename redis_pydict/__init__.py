@@ -1,5 +1,4 @@
 from os import stat
-from turtle import st
 from types import NoneType
 import pickle
 import json
@@ -73,6 +72,8 @@ class PyRedisDict:
     def _scan_iter(self, pattern):
         formatted_pattern = DataFunctions.define_key(self.key_namespace, pattern)
         return self.redis.scan_iter(formatted_pattern)
+
+    # basic GET and SET functions
     
     def get(self, key, default):
         key = DataFunctions.define_key(self.key_namespace, key)
@@ -104,4 +105,55 @@ class PyRedisDict:
         key_formatted = DataFunctions.define_key(self.key_namespace, key)
         return self.redis.exists(key_formatted)
     
-    def __
+    # iteration functions
+    
+    def _iter_internal(self, pattern):
+        scan_iter = self._scan_iter(pattern)
+        keys = ( DataFunctions.unpack_key(key) for key in scan_iter )
+        return keys
+    
+    def _iter_items(self, pattern):
+        return [
+            (key, self[key])
+            for key in self._iter_internal(pattern)
+        ]
+    
+    def __iter__(self):
+        return self._iter_internal('*')
+    
+    def items(self):
+        return self._iter_items('*')
+    
+    def iter_matching(self, pattern='*'):
+        return self._iter_internal(pattern)
+    
+    def items_matching(self, pattern='*'):
+        return self._iter_items(pattern)
+
+    # mulit-data operations
+    def keys(self):
+        return self._iter_items('*')
+    
+    def clear(self):
+        keys = list(self._scan_iter('*'))
+        self.redis.delete(*keys)
+    
+    def values(self):
+        keys = list(self._scan_iter('*'))
+        return [ 
+            DataFunctions.decode(value) 
+            for value in self.redis.mget(*keys)  
+        ]
+    
+    def update(self, from_dic):
+        pipeline = self.redis.pipeline()
+        for key, value in from_dic.items():
+            formatted_key, encoded_value = DataFunctions.define_key(key), DataFunctions.encode(value)
+            pipeline.set(formatted_key, encoded_value)
+        pipeline.execute()
+    
+    def to_dict(self):
+        return {
+            key: value for key, value in self.items()
+        }
+    
