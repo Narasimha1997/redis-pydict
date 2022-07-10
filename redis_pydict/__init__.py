@@ -160,7 +160,7 @@ class PyRedisDict:
         return {key: value for key, value in self.items()}
     
     def __len__(self):
-        return len(self._scan_iter('*'))
+        return len(list(self._scan_iter('*')))
     
     def __str__(self) -> str:
         return str(self.to_dict())
