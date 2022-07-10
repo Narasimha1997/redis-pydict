@@ -43,7 +43,7 @@ On the sender side:
 
 ```python
 # enable notifications
-redis_dict.set_notification_mode(true)
+redis_dict.set_notification_mode(True)
 
 # set a unique id
 redis_dict.set_notification_id('myprocess1')
