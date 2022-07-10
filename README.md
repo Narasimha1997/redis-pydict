@@ -1,5 +1,5 @@
 # redis-pydict
-A python dictionary that uses Redis as in-memory storage backend to facilitate distributed computing applications development. This library is a small wrapper around Redis that provides dictionary that acts as a drop-in replacement for python dict, but stores data in Redis instead of local program memor, thus key-value pairs written into the python dictionary can be used by other programs that are connected to the same Redis instance / cluster anywhere over the network. The library also provides wrapper around Redis Pub-Sub using which processes can publish and wait for events when new keys are added to the dictionary.
+A python dictionary that uses Redis as in-memory storage backend to facilitate distributed computing applications development. This library is a small wrapper around Redis providing a dictionary like class that acts as a drop-in replacement for python dict, but stores data in Redis instead of local program memory, thus key-value pairs written into the python dictionary can be used by other programs that are connected to the same Redis instance / cluster anywhere over the network. The library also provides wrapper around Redis Pub-Sub using which processes can publish and wait for events when new keys are added to the dictionary.
 
 ### Installation
 1. From source:
