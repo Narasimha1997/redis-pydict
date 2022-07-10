@@ -28,7 +28,7 @@ TYPE_DECODE_FUNCTIONS = {
     ord('n'): lambda _: None,
     ord('i'): lambda i: int(i.decode('utf-8')),
     ord('f'): lambda f: float(f.decode('utf-8')),
-    ord('s'): lambda s: s.deocde('utf-8'),
+    ord('s'): lambda s: s.decode('utf-8'),
     ord('d'): lambda d: json.loads(d),
     ord('l'): lambda l: json.loads(l),
     ord('c'): lambda c: pickle.loads(c)
@@ -74,6 +74,14 @@ class PyRedisDict:
             host=host, port=port, db=db, password=password)
 
         self.key_namespace = namespace
+        self.enable_publish = False
+        self.notification_id = ""
+
+    def set_notification_mode(self, enable):
+        self.enable_publish = enable
+
+    def set_notification_id(self, id):
+        self.notification_id = id
 
     def _scan_iter(self, pattern):
         formatted_pattern = DataFunctions.define_key(self.key_namespace,
@@ -93,6 +101,10 @@ class PyRedisDict:
         key = DataFunctions.define_key(self.key_namespace, key)
         data = DataFunctions.encode(value)
         self.redis.set(key, data)
+
+        # push notification if enabled
+        if self.enable_publish:
+            self.redis.publish("event_" + key, self.notification_id)
 
     def __getitem__(self, key):
         key_formatted = DataFunctions.define_key(self.key_namespace, key)
@@ -140,7 +152,8 @@ class PyRedisDict:
 
     def clear(self):
         keys = list(self._scan_iter('*'))
-        self.redis.delete(*keys)
+        if len(keys) != 0:
+            self.redis.delete(*keys)
 
     def values(self):
         keys = list(self._scan_iter('*'))
@@ -152,15 +165,34 @@ class PyRedisDict:
         pipeline = self.redis.pipeline()
         for key, value in from_dic.items():
             formatted_key, encoded_value = DataFunctions.define_key(
-                key), DataFunctions.encode(value)
+                self.key_namespace, key), DataFunctions.encode(value)
             pipeline.set(formatted_key, encoded_value)
         pipeline.execute()
 
     def to_dict(self):
         return {key: value for key, value in self.items()}
-    
+
     def __len__(self):
         return len(list(self._scan_iter('*')))
-    
+
     def __str__(self) -> str:
         return str(self.to_dict())
+
+    def subscribe_to_key_events(self, pattern="*"):
+        channel_name = DataFunctions.define_key("event_" + self.key_namespace,
+                                                pattern)
+        pusub = self.redis.pubsub()
+        pusub.subscribe(channel_name)
+
+        for message in pusub.listen():
+            if message and type(
+                    message) == dict and message['type'] == 'message':
+                notification_id = message['data'].decode('utf-8')
+                channel_complete_name = message['channel'].decode('utf-8')
+                if not channel_complete_name.startswith('event_'):
+                    pass
+
+                channel = channel_complete_name[6:]
+                value = self[channel]
+
+                yield (channel, notification_id, value)
