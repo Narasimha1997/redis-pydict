@@ -87,7 +87,7 @@ def test_basic_get_set():
 ```
 
 2. Custom objects
-```
+```python
 def test_custom_class_get_set():
    d = PyRedisDict(namespace="mykeyspace")
 
