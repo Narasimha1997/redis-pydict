@@ -53,12 +53,12 @@ class DataFunctions:
 
     @staticmethod
     def define_key(namespace, key):
-        return namespace + "&&" + key
+        return namespace + "&&" + str(key)
 
     @staticmethod
     def unpack_key(key):
         key_string = key.decode('utf-8')
-        return key_string.split("&&")[1]
+        return '&&'.join(key_string.split("&&")[1:])
 
 
 class PyRedisDict:
