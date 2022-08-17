@@ -20,4 +20,4 @@ setup(
     ],
     keywords='python redis distributed-computing dict software-dev',
     zip_safe=False,
-    install_requires=["redis", "pgrep"])
+    install_requires=["redis", "pgrep", "tqdm", 'requests'])
