@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import *
 import redis
 from .const import NONE_TYPE_MAGIC,\
     TYPE_MAGIC,\
