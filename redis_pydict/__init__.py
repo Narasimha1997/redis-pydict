@@ -1,2 +1,2 @@
-from .const import *
-from .pyredisdict import *
+from .pyredisdict import PyRedisDict
+from .install import RedisServer

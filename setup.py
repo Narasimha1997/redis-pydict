@@ -4,12 +4,11 @@ long_description = open('README.md').read()
 
 setup(
     name='redis-pydict',
-    version='0.0.1',
+    version='0.2',
     author='Narasimha Prasanna HN',
     author_email='narasimhaprasannahn@gmail.com',
     url='https://github.com/Narasimha1997/redis-pydict',
-    description=
-    "A python dictionary that uses Redis as in-memory storage backend to facilitate distributed computing applications development.",
+    description="A python dictionary that uses Redis as in-memory storage backend to facilitate distributed computing applications development.",
     long_description=long_description,
     long_description_content_type="text/markdown",
     license='MIT',
@@ -21,4 +20,4 @@ setup(
     ],
     keywords='python redis distributed-computing dict software-dev',
     zip_safe=False,
-    install_requires=["redis"])
+    install_requires=["redis", "pgrep", "tqdm", 'requests'])
