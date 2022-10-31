@@ -3,14 +3,19 @@ A python dictionary that uses Redis as in-memory storage backend to facilitate d
 
 ### Installation
 1. From source:
-```
+```bash
 git clone git@github.com:Narasimha1997/redis-pydict.git
 cd redis-pydict
 pip3 install -e .
 ```
+or 
+
+```bash
+pip3 install git+https://github.com/Narasimha1997/redis-pydict#egg=redis-pydict
+```
 
 2. From PIP
-```
+```bash
 pip3 install redis-pydict
 ```
 

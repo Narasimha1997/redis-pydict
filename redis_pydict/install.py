@@ -57,15 +57,16 @@ class RedisServer:
 
     @staticmethod
     def _build():
+        coresToBuild = 1 if os.cpu_count() is not None else os.cpu_count()//3
         if 'src' in os.listdir('redis_server/redis-stable') and 'redis-server' in os.listdir('./redis_server/redis-stable/src'):
             # os.chdir('redis_server/redis-stable')
             debug('Redis Already Built', Log.WRN)
         else:
             debug('Running Redis Build On ' +
-                  str((os.cpu_count()//3)+1 if type(os.cpu_count()) is int else 1)+' Cores')
+                  str(coresToBuild+1 if type(os.cpu_count()) is int else 1)+' Cores')
             anim = Loader(desc='Building ').start()
             os.chdir('redis_server/redis-stable')
-            x = sp.run(['make -j'+str((os.cpu_count()//3)+1 if type(os.cpu_count()) is int else 1)],
+            x = sp.run(['make -j'+str(coresToBuild+1 if type(os.cpu_count()) is int else 1)],
                        capture_output=True, text=True, shell=True)
             anim.stop()
             os.chdir('../../')
@@ -101,6 +102,14 @@ class RedisServer:
         else:
             return 0
 
+    def _setProcID(self):
+        if self.procID == None and self.proc != None:
+            try:
+                self.procID = pgrep.pgrep(
+                    r"-f 'redis_server\/redis-server \*\:6379'")[0]
+            except IndexError as e:
+                debug("Unable to set PID", Log.ERR)
+
     def install(self, saveLogs: bool = False, ):
         if sys.platform.lower() != 'linux':
             debug('OS not Linux, install redis manually', Log.ERR)
@@ -125,12 +134,17 @@ class RedisServer:
         else:
             self.proc = Process(target=runServer)
         self.proc.start()
-        self.procID = pgrep.pgrep(
-            r"-f 'redis_server\/redis-server \*\:6379'")[0]
+        while not self.proc.is_alive():
+            pass
+        # self.procID = self.proc.pid
+        # print('new: {} old: {}'.format(self.procID, pgrep.pgrep(
+            # r"-f 'redis_server\/redis-server \*\:6379'")[0]))
+        self._setProcID()
 
     def startServer(self):
         if self.proc is None:
             asyncio.run(self._startServer())
+            time.sleep(0.5)
         else:
             debug('Redis Server already running manually', Log.WRN)
 
@@ -138,13 +152,17 @@ class RedisServer:
         if self.proc is None:
             debug('Redis Server not running', Log.WRN)
         else:
-            # self.proc.kill()
-            os.kill(self.procID, 15)
-            debug('Redis Server stopped', Log.SUC)
+            self._setProcID()
+            self.proc.terminate()
+            if self.procID != None:
+                os.kill(self.procID, 15)
             anim = Loader(desc='Stopping Redis Server ').start()
             while self.proc.is_alive():
                 pass
+            time.sleep(0.5)
             anim.stop()
+            # if self.procID
+            debug('Redis Server stopped', Log.SUC)
             print('\n')
             self.proc = None
             self.procID = None
