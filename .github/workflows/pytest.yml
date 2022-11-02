@@ -3,7 +3,7 @@ name: Pytest Unit Tests
 on: [push]
 
 jobs:
-  build:
+  test:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
@@ -16,6 +16,6 @@ jobs:
         python -m pip install --upgrade pip
         pip install pytest
         pip install .
-    - name: Analysing the code with pylint
+    - name: Analysing the code with pytest
       run: |
         pytest -v
