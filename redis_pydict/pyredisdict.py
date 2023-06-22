@@ -16,7 +16,7 @@ class DataFunctions:
         return TYPE_ENCODE_FUNCTIONS[type_](data)
 
     @staticmethod
-    def decode(data: str):
+    def decode(data: bytes):
         type_magic = data[0]
 
         rest_of_data = data[1:]
